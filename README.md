@@ -1,3 +1,4 @@
+PRIM-006
 # MAILSIEVE
 
 MAILSIEVE is a command-line tool for discovering publicly listed business email addresses from domains, with an emphasis on **rate-limiting, resumability, and evidence logging**.

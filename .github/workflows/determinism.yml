@@ -72,11 +72,7 @@ jobs:
             exit 1
           fi
           
-          echo "PASS: Index checksum verified"
-
-  failure-codes-integrity:
-    runs-on: ubuntu-latest
-    steps:
+          echo "PASS: Index checksum verified"    steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Verify FAILURE_CODES.json checksum

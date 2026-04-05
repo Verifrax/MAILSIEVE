@@ -3,9 +3,6 @@
   "private": true,
   "type": "module",
   "version": "1.0.0",
-  "scripts": {
-    "build": "bash ./build.sh"
-  },
   "devDependencies": {
     "@vercel/ncc": "^0.38.1",
     "esbuild": "^0.25.9",
@@ -20,5 +17,6 @@
     "psl": "^1.15.0",
     "robots-parser": "^3.0.1",
     "yargs": "^18.0.0"
-  }
+  },
+  "description": "Bounded, resumable CLI for discovering publicly listed business email addresses from domain lists."
 }

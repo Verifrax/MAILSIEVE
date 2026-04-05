@@ -168,7 +168,7 @@ run_one() {
   rm -f "$tmp_out"
 
   # Record processed domain (store normalized)
-  
+
 with_lock "$LOCK_PROCESSED" append_line "$PROCESSED" "$(printf "%s\n" "$dom" | normalize_domain | head -n1)"
 }
 

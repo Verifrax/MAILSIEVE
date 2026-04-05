@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  repo-sanity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate repository surfaces
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f README.md
+          test -f package.json
+          test -f mailsieve.mjs
+          grep -q "\"name\": \"mailsieve\"" package.json
+          grep -q "\"private\": true" package.json
+
+      - name: Block Verifrax residue
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -RInE "verifrax|artifact-0005|AUCTORISEAL|CORPIFORM|SIGILLARIUM|proof\\.verifrax|verify\\.verifrax|apply\\.verifrax|cicullis\\.verifrax|docs\\.verifrax|status\\.verifrax" README.md .github package.json || {
+            echo "Verifrax boundary residue detected"
+            exit 1
+          }
+
+      - name: Node syntax check
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check mailsieve.mjs

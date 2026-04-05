@@ -8,22 +8,33 @@ on:
   workflow_dispatch:
 
 jobs:
-  repo-sanity:
+  identity:
+    name: identity
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Validate repository surfaces
+      - name: Validate repository identity
         shell: bash
         run: |
           set -euo pipefail
           test -f README.md
           test -f package.json
           test -f mailsieve.mjs
-          grep -q "\"name\": \"mailsieve\"" package.json
-          grep -q "\"private\": true" package.json
+          python3 - <<'PY'
+import json
+data = json.load(open("package.json"))
+assert data["name"] == "mailsieve"
+assert data["private"] is True
+assert "description" in data and data["description"].strip()
+assert "verifrax" not in data["description"].lower()
+PY
 
-      - name: Block boundary residue
+  append-only:
+    name: append-only
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Block boundary residue and runtime-output tracking
         shell: bash
         run: |
           set -euo pipefail
@@ -32,9 +43,51 @@ jobs:
             echo "Boundary residue detected"
             exit 1
           }
+          ! git ls-files | grep -Eq "^(results\\.csv|processed\\.txt|logs/.*\\.jsonl)$" || {
+            echo "Runtime output files must not be tracked"
+            exit 1
+          }
 
-      - name: Node syntax check
+  checksum-verify:
+    name: checksum-verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recompute stable checksums
         shell: bash
         run: |
           set -euo pipefail
-          node --check mailsieve.mjs
+          sha256sum README.md package.json mailsieve.mjs .github/workflows/ci.yml | tee CHECKSUMS.txt
+          test -s CHECKSUMS.txt
+
+  whitespace-check:
+    name: whitespace-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject trailing whitespace and CRLF
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+from pathlib import Path
+import subprocess
+bad = []
+for rel in subprocess.check_output(["git", "ls-files"], text=True).splitlines():
+    p = Path(rel)
+    if not p.is_file():
+        continue
+    try:
+        text = p.read_text(encoding="utf-8")
+    except Exception:
+        continue
+    for i, line in enumerate(text.splitlines(True), 1):
+        if line.endswith("\r\n"):
+            bad.append(f"{rel}:{i}: CRLF")
+        stripped = line.rstrip("\n").rstrip("\r")
+        if stripped.endswith(" ") or stripped.endswith("\t"):
+            bad.append(f"{rel}:{i}: trailing whitespace")
+if bad:
+    print("\n".join(bad))
+    raise SystemExit(1)
+PY

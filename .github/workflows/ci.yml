@@ -2,14 +2,16 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - mailsieve-boundary-scrub
   pull_request:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   identity:
-    name: identity
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,19 +24,20 @@ jobs:
           test -f mailsieve.mjs
           python3 - <<'PY'
 import json
-data = json.load(open("package.json"))
+with open("package.json", "r", encoding="utf-8") as f:
+    data = json.load(f)
 assert data["name"] == "mailsieve"
 assert data["private"] is True
-assert "description" in data and data["description"].strip()
-assert "verifrax" not in data["description"].lower()
+desc = data.get("description", "")
+assert desc.strip()
+assert "verifrax" not in desc.lower()
 PY
 
   append-only:
-    name: append-only
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Block boundary residue and runtime-output tracking
+      - name: Block boundary residue and tracked runtime output
         shell: bash
         run: |
           set -euo pipefail
@@ -49,7 +52,6 @@ PY
           }
 
   checksum-verify:
-    name: checksum-verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,21 +59,22 @@ PY
         shell: bash
         run: |
           set -euo pipefail
-          sha256sum README.md package.json mailsieve.mjs .github/workflows/ci.yml | tee CHECKSUMS.txt
+          sha256sum README.md package.json mailsieve.mjs .github/workflows/ci.yml > CHECKSUMS.txt
           test -s CHECKSUMS.txt
+          cat CHECKSUMS.txt
 
   whitespace-check:
-    name: whitespace-check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Reject trailing whitespace and CRLF
+      - name: Reject CRLF and trailing whitespace
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
 from pathlib import Path
 import subprocess
+
 bad = []
 for rel in subprocess.check_output(["git", "ls-files"], text=True).splitlines():
     p = Path(rel)
@@ -87,6 +90,7 @@ for rel in subprocess.check_output(["git", "ls-files"], text=True).splitlines():
         stripped = line.rstrip("\n").rstrip("\r")
         if stripped.endswith(" ") or stripped.endswith("\t"):
             bad.append(f"{rel}:{i}: trailing whitespace")
+
 if bad:
     print("\n".join(bad))
     raise SystemExit(1)

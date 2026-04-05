@@ -12,6 +12,7 @@ on:
 
 jobs:
   identity:
+    name: identity
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,18 +23,10 @@ jobs:
           test -f README.md
           test -f package.json
           test -f mailsieve.mjs
-          python3 - <<'PY'
-import json
-with open("package.json", "r", encoding="utf-8") as f:
-    data = json.load(f)
-assert data["name"] == "mailsieve"
-assert data["private"] is True
-desc = data.get("description", "")
-assert desc.strip()
-assert "verifrax" not in desc.lower()
-PY
+          python3 -c 'import json; d=json.load(open("package.json", encoding="utf-8")); assert d["name"]=="mailsieve"; assert d["private"] is True; desc=d.get("description",""); assert desc.strip(); assert "verifrax" not in desc.lower()'
 
   append-only:
+    name: append-only
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -41,17 +34,17 @@ PY
         shell: bash
         run: |
           set -euo pipefail
-          PATTERN="verifrax|artifact-0005|AUCTORISEAL|CORPIFORM|SIGILLARIUM|proof\\.verifrax|verify\\.verifrax|apply\\.verifrax|cicullis\\.verifrax|docs\\.verifrax|status\\.verifrax"
-          ! git grep -nEI "$PATTERN" -- README.md package.json ":(exclude).github/workflows/*" || {
+          if git grep -nEI "verifrax|artifact-0005|AUCTORISEAL|CORPIFORM|SIGILLARIUM|proof\\.verifrax|verify\\.verifrax|apply\\.verifrax|cicullis\\.verifrax|docs\\.verifrax|status\\.verifrax" -- README.md package.json; then
             echo "Boundary residue detected"
             exit 1
-          }
-          ! git ls-files | grep -Eq "^(results\\.csv|processed\\.txt|logs/.*\\.jsonl)$" || {
+          fi
+          if git ls-files | grep -Eq "^(results\\.csv|processed\\.txt|logs/.*\\.jsonl)$"; then
             echo "Runtime output files must not be tracked"
             exit 1
-          }
+          fi
 
   checksum-verify:
+    name: checksum-verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,6 +57,7 @@ PY
           cat CHECKSUMS.txt
 
   whitespace-check:
+    name: whitespace-check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -71,27 +65,11 @@ PY
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-from pathlib import Path
-import subprocess
-
-bad = []
-for rel in subprocess.check_output(["git", "ls-files"], text=True).splitlines():
-    p = Path(rel)
-    if not p.is_file():
-        continue
-    try:
-        text = p.read_text(encoding="utf-8")
-    except Exception:
-        continue
-    for i, line in enumerate(text.splitlines(True), 1):
-        if line.endswith("\r\n"):
-            bad.append(f"{rel}:{i}: CRLF")
-        stripped = line.rstrip("\n").rstrip("\r")
-        if stripped.endswith(" ") or stripped.endswith("\t"):
-            bad.append(f"{rel}:{i}: trailing whitespace")
-
-if bad:
-    print("\n".join(bad))
-    raise SystemExit(1)
-PY
+          if git grep -nI $'\r' -- .; then
+            echo "CRLF detected"
+            exit 1
+          fi
+          if git grep -nI -E "[[:blank:]]$" -- .; then
+            echo "Trailing whitespace detected"
+            exit 1
+          fi

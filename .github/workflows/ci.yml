@@ -23,12 +23,13 @@ jobs:
           grep -q "\"name\": \"mailsieve\"" package.json
           grep -q "\"private\": true" package.json
 
-      - name: Block Verifrax residue
+      - name: Block boundary residue
         shell: bash
         run: |
           set -euo pipefail
-          ! grep -RInE "verifrax|artifact-0005|AUCTORISEAL|CORPIFORM|SIGILLARIUM|proof\\.verifrax|verify\\.verifrax|apply\\.verifrax|cicullis\\.verifrax|docs\\.verifrax|status\\.verifrax" README.md .github package.json || {
-            echo "Verifrax boundary residue detected"
+          PATTERN="verifrax|artifact-0005|AUCTORISEAL|CORPIFORM|SIGILLARIUM|proof\\.verifrax|verify\\.verifrax|apply\\.verifrax|cicullis\\.verifrax|docs\\.verifrax|status\\.verifrax"
+          ! git grep -nEI "$PATTERN" -- README.md package.json ":(exclude).github/workflows/*" || {
+            echo "Boundary residue detected"
             exit 1
           }
 

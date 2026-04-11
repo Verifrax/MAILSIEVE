@@ -2,6 +2,11 @@
 
 Command-line discovery tool for finding publicly listed business email addresses from domain lists with resumable execution, rate discipline, and inspectable outputs.
 
+## Terminal planes
+
+- **[ANAGNORIUM](https://github.com/Verifrax/ANAGNORIUM)** — terminal recognition
+- **[REGRESSORIUM](https://github.com/Verifrax/REGRESSORIUM)** — terminal recourse
+
 ## Status
 
 - Repository role: operational discovery tool only
@@ -82,3 +87,11 @@ A contribution here is wrong if it:
 ## License
 
 Apache License Version 2.0. See `LICENSE`.
+
+## Adjacent sovereign surfaces
+
+This repository is part of the Verifrax sovereign stack and remains bounded relative to:
+
+- **[ANAGNORIUM](https://github.com/Verifrax/ANAGNORIUM)** for terminal recognition
+- **[REGRESSORIUM](https://github.com/Verifrax/REGRESSORIUM)** for terminal recourse
+
